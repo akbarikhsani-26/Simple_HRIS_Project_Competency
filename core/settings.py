@@ -4,8 +4,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-replace-this-in-production"
-DEBUG = True
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-replace-this-in-production")
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
@@ -25,6 +25,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -60,6 +61,8 @@ DB_PASSWORD = os.environ.get("DB_PASSWORD", "hris_password")
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_PORT = os.environ.get("DB_PORT", "5432")
 
+import dj_database_url
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -70,6 +73,9 @@ DATABASES = {
         "PORT": DB_PORT,
     }
 }
+
+if os.environ.get("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 # Custom User Model
 AUTH_USER_MODEL = "authentication.CustomUser"
