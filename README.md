@@ -1,5 +1,7 @@
 # HRIS Application (Django MVT + DRF)
 
+**Live Demo:** [https://simple-hris-project-competency.onrender.com](https://simple-hris-project-competency.onrender.com)
+
 Aplikasi *Human Resource Information System* (HRIS) komprehensif yang dibangun menggunakan Django (Python) dengan pendekatan *hybrid* (MVT untuk Antarmuka Web dan Django Rest Framework untuk API). 
 
 Proyek ini telah dikontainerisasi menggunakan **Docker** dan menggunakan **PostgreSQL** sebagai sistem basis datanya.

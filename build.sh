@@ -26,3 +26,6 @@ user.role = 'HR_ADMIN'
 user.save()
 print(f'Superuser {email} role ensured as HR_ADMIN.')
 "
+
+# Seed employee dummy data
+python manage.py seed_employees
