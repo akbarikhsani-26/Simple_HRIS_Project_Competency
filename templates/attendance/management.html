@@ -71,7 +71,16 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{% url 'attendance_edit' att.karyawan.id selected_date %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border); color: #4f46e5;">Edit</a>
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-start; align-items: center;">
+                            <a href="{% url 'attendance_edit' att.karyawan.id selected_date %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border); color: #4f46e5;">Edit</a>
+                            
+                            {% if att.jam_masuk %}
+                            <form method="post" action="{% url 'attendance_reset' att.karyawan.id selected_date %}" class="form-delete-swal" data-name="{{ att.karyawan.nama }}" data-date="{{ selected_date }}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="button" class="btn btn-delete-swal" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid #f87171; color: #dc2626; background: transparent; cursor: pointer;">Reset</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -100,4 +109,35 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteButtons = document.querySelectorAll('.btn-delete-swal');
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const form = this.closest('form');
+                const name = form.getAttribute('data-name');
+                const date = form.getAttribute('data-date');
+                
+                Swal.fire({
+                    title: 'Konfirmasi Reset',
+                    text: `Apakah Anda yakin ingin mereset absensi untuk ${name} pada tanggal ${date}? Karyawan akan dianggap belum absen.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Reset!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

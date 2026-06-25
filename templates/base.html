@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HRIS System{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.1">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -64,19 +66,42 @@
             </header>
 
             {% if messages %}
-            <div style="margin-bottom: 1.5rem;">
+            <div id="django-messages" style="display: none;">
                 {% for message in messages %}
-                {% if message.tags == 'success' %}
-                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #d1fae5; color: #065f46; border: 1px solid #34d399;">
-                {% elif message.tags == 'error' %}
-                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;">
-                {% else %}
-                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db;">
-                {% endif %}
-                    {{ message }}
-                </div>
+                    <span data-tags="{{ message.tags }}" data-message="{{ message }}"></span>
                 {% endfor %}
             </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.onmouseenter = Swal.stopTimer;
+                            toast.onmouseleave = Swal.resumeTimer;
+                        }
+                    });
+                    
+                    const messageElements = document.querySelectorAll('#django-messages span');
+                    messageElements.forEach(function(elem) {
+                        let iconType = 'success';
+                        const tags = elem.getAttribute('data-tags');
+                        if (tags && tags.includes('error')) {
+                            iconType = 'error';
+                        } else if (tags && tags.includes('warning')) {
+                            iconType = 'warning';
+                        }
+                        
+                        Toast.fire({
+                            icon: iconType,
+                            title: elem.getAttribute('data-message')
+                        });
+                    });
+                });
+            </script>
             {% endif %}
 
             {% block content %}

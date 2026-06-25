@@ -4,6 +4,7 @@ from .views import (
     AttendanceManagementView,
     AttendancePersonalView,
     AttendanceUpdateView,
+    AttendanceResetView,
 )
 
 urlpatterns = [
@@ -17,5 +18,10 @@ urlpatterns = [
         "management/<int:emp_id>/<str:date_str>/edit/",
         AttendanceUpdateView.as_view(),
         name="attendance_edit",
+    ),
+    path(
+        "management/<int:emp_id>/<str:date_str>/reset/",
+        AttendanceResetView.as_view(),
+        name="attendance_reset",
     ),
 ]

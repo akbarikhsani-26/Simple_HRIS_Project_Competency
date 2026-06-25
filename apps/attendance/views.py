@@ -3,13 +3,15 @@ from datetime import datetime
 import holidays
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils import timezone
-from django.views.generic import ListView, TemplateView, UpdateView
+from django.views.generic import ListView, TemplateView, UpdateView, View
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.urls import reverse_lazy
 
 from apps.employees.models import Employee
 
 from .models import Attendance
+from .forms import AttendanceForm
 
 
 class AttendancePersonalView(LoginRequiredMixin, ListView):
@@ -134,44 +136,48 @@ class AttendanceManagementView(UserPassesTestMixin, TemplateView):
 
         return context
 
-class AttendanceUpdateView(
-    LoginRequiredMixin, UserPassesTestMixin, UpdateView
-):
+class AttendanceUpdateView(UserPassesTestMixin, UpdateView):
     model = Attendance
+    form_class = AttendanceForm
     template_name = "attendance/form.html"
-    fields = ["jam_masuk", "jam_keluar", "status"]
-    success_url = reverse_lazy("attendance_management")
-
-    def get_object(self, queryset=None):
-        emp_id = self.kwargs.get("emp_id")
-        date_str = self.kwargs.get("date_str")
-        from django.shortcuts import get_object_or_404
-
-        from apps.employees.models import Employee
-
-        employee = get_object_or_404(Employee, id=emp_id)
-
-        try:
-            return Attendance.objects.get(karyawan=employee, tanggal=date_str)
-        except Attendance.DoesNotExist:
-            return Attendance(karyawan=employee, tanggal=date_str)
 
     def test_func(self):
         return self.request.user.role == "HR_ADMIN"
 
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        # Add a time picker widget
-        from django import forms
-
-        form.fields["jam_masuk"].widget = forms.TimeInput(
-            format="%H:%M", attrs={"type": "time"}
-        )
-        form.fields["jam_keluar"].widget = forms.TimeInput(
-            format="%H:%M", attrs={"type": "time"}
-        )
-        return form
+    def get_object(self, queryset=None):
+        emp_id = self.kwargs.get("emp_id")
+        date_str = self.kwargs.get("date_str")
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        
+        try:
+            return Attendance.objects.get(karyawan_id=emp_id, tanggal=target_date)
+        except Attendance.DoesNotExist:
+            return Attendance(karyawan_id=emp_id, tanggal=target_date)
 
     def form_valid(self, form):
         messages.success(self.request, "Data absensi berhasil diperbarui.")
         return super().form_valid(form)
+        
+    def get_success_url(self):
+        date_str = self.kwargs.get("date_str")
+        return f"{reverse_lazy('attendance_management')}?date={date_str}"
+
+class AttendanceResetView(UserPassesTestMixin, View):
+    def test_func(self):
+        return self.request.user.role == "HR_ADMIN"
+
+    def post(self, request, emp_id, date_str):
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            attendance = get_object_or_404(Attendance, karyawan_id=emp_id, tanggal=target_date)
+            attendance.delete()
+            messages.success(request, f"Absensi berhasil direset. Karyawan kini dianggap belum absen pada tanggal {date_str}.")
+        except ValueError:
+            messages.error(request, "Format tanggal tidak valid.")
+        except Exception as e:
+            messages.error(request, f"Terjadi kesalahan: {str(e)}")
+            
+        # Redirect back to management page with same parameters if possible, 
+        # or just to the management page
+        return redirect(f"{reverse_lazy('attendance_management')}?date={date_str}")
+
