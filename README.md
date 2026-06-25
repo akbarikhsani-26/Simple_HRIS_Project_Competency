@@ -117,7 +117,10 @@ Setelah aplikasi berjalan, berikut adalah langkah-langkah penggunaan dari sisi p
 1. Akses halaman utama `http://localhost:8000/`.
 2. Gunakan kredensial berikut untuk mencoba sistem:
    - **HR Admin (Akses Penuh):** Email: `admin@hr.com` | Password: `admin123`
-   - **Karyawan (Akses Terbatas):** Jika Anda menggunakan Docker dan dummy data ter-generate otomatis, silakan coba login dengan `fnarpati@example.com` (Password: `password123`). Jika Anda setup manual, Anda perlu menambahkan user Karyawan terlebih dahulu lewat dashboard HR Admin.
+   - **Karyawan (Akses Terbatas):** Jika Anda menggunakan Docker dan dummy data ter-generate otomatis, silakan coba login dengan
+   - `fnarpati@example.com`
+   - `galur93@example.net`
+   - `rpangestu@example.net` (Password: `password123`). Jika Anda setup manual, Anda perlu menambahkan user Karyawan terlebih dahulu lewat dashboard HR Admin.
 3. Klik tombol **Login**.
 
 ### Langkah 2: Eksplorasi Beranda (Dashboard)
