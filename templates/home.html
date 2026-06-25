@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1>Selamat Datang di HRIS</h1>
+    <p>Halo, {{ user.email }}. Anda masuk sebagai <strong>{{ user.get_role_display }}</strong>.</p>
+</div>
+
+{% if user.role == 'HR_ADMIN' %}
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-title">Total Karyawan</div>
+        <div class="stat-value" style="color: var(--primary);">{{ total_employees }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Karyawan Aktif</div>
+        <div class="stat-value" style="color: var(--secondary);">{{ active_employees }}</div>
+    </div>
+    <div class="stat-card" style="display: flex; justify-content: center; align-items: center;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+            <a href="/api/attendance/export-excel/" class="btn" style="border: 1px solid var(--border); background-color: #10b981; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">⬇ Export Excel</a>
+            <a href="/api/attendance/export-csv/" class="btn" style="border: 1px solid var(--border); background-color: #4f46e5; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">⬇ Export CSV</a>
+        </div>
+    </div>
+</div>
+
+<div class="charts-container" style="display: grid; gap: 2rem; margin-bottom: 2rem;">
+    <div class="card" style="min-width: 0;">
+        <h2 style="font-size: 1.1rem; margin-bottom: 1rem; text-align: center;">Karyawan per Jabatan</h2>
+        <div style="position: relative; height: 300px;">
+            <canvas id="jabatanChart"></canvas>
+        </div>
+    </div>
+    <div class="card" style="min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h2 style="font-size: 1.1rem; margin: 0; text-align: center;">Tren Kehadiran ({{ month_name }})</h2>
+            <form method="GET" action="" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+                <input type="month" name="month" value="{{ selected_month }}" onchange="this.form.elements['day'].value=''; this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;" title="Filter Bulan">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Atau</span>
+                <input type="date" name="day" value="{{ selected_day }}" onchange="this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;" title="Filter Tanggal">
+                <a href="?" class="btn" style="padding: 0.5rem; border: 1px solid var(--border); background-color: white; font-size: 0.85rem; display: flex; align-items: center;" title="Reset Filter">↻</a>
+            </form>
+        </div>
+        <div style="position: relative; height: 300px;">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+        <div id="customLegend" style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; flex-wrap: wrap;"></div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <h2>Menu Karyawan</h2>
+    <p style="margin-bottom: 1.5rem;">Akses profil dan data absensi Anda melalui menu di bawah ini.</p>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+        <a href="{% url 'employee_list' %}" class="btn btn-primary">Lihat Profil Saya</a>
+        <a href="{% url 'attendance_personal' %}" class="btn" style="border: 1px solid var(--border);">Catat Absensi</a>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="margin: 0;">Statistik Kehadiran ({{ month_name }})</h3>
+        <form method="GET" action="" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+            <input type="month" name="month" value="{{ selected_month }}" onchange="this.form.elements['day'].value=''; this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;" title="Filter Bulan">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Atau</span>
+            <input type="date" name="day" value="{{ selected_day }}" onchange="this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;" title="Filter Tanggal">
+            <a href="?" class="btn" style="padding: 0.5rem; border: 1px solid var(--border); background-color: white; font-size: 0.85rem; display: flex; align-items: center;" title="Reset Filter">↻</a>
+        </form>
+    </div>
+    <div style="position: relative; height: 300px; max-width: 400px;">
+        <canvas id="empChart"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        /* {% if user.role == 'HR_ADMIN' %} */
+        // Data Grafik Jabatan
+        const jabatanLabels = JSON.parse('{{ chart_jabatan_labels|escapejs }}');
+        const jabatanData = JSON.parse('{{ chart_jabatan_data|escapejs }}');
+        
+        const ctxJabatan = document.getElementById('jabatanChart').getContext('2d');
+        new Chart(ctxJabatan, {
+            type: 'doughnut',
+            data: {
+                labels: jabatanLabels,
+                datasets: [{
+                    data: jabatanData,
+                    backgroundColor: [
+                        '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Data Grafik Absensi
+        const attendanceLabels = JSON.parse('{{ chart_attendance_labels|escapejs }}');
+        const tepatWaktuData = JSON.parse('{{ chart_tepat_waktu_data|escapejs|default:"[]" }}');
+        const terlambatData = JSON.parse('{{ chart_terlambat_data|escapejs|default:"[]" }}');
+        const alpaData = JSON.parse('{{ chart_alpa_data|escapejs|default:"[]" }}');
+
+        const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(ctxAttendance, {
+            type: 'bar',
+            data: {
+                labels: attendanceLabels,
+                datasets: [
+                    {
+                        label: 'Tepat Waktu',
+                        data: tepatWaktuData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Terlambat',
+                        data: terlambatData,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Tidak Masuk (Alpa)',
+                        data: alpaData,
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (e, elements, chart) => {
+                    if (elements.length > 0) {
+                        const datasetIndex = elements[0].datasetIndex;
+                        const index = elements[0].index;
+                        const datasetLabel = chart.data.datasets[datasetIndex].label;
+                        const dayLabel = chart.data.labels[index];
+                        
+                        let statusParam = '';
+                        if (datasetLabel === 'Tepat Waktu') statusParam = 'TEPAT_WAKTU';
+                        if (datasetLabel === 'Terlambat') statusParam = 'TERLAMBAT';
+                        if (datasetLabel === 'Tidak Masuk (Alpa)') statusParam = 'ALPA';
+                        
+                        const selectedMonth = '{{ selected_month }}';
+                        const dateParam = selectedMonth + '-' + dayLabel.toString().padStart(2, '0');
+                        
+                        window.location.href = `{% url 'attendance_management' %}?date=${dateParam}&status=${statusParam}`;
+                    }
+                },
+                onHover: (event, chartElement) => {
+                    event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Generate Custom Checkbox Legend
+        const customLegendContainer = document.getElementById('customLegend');
+        const chartInstance = Chart.getChart(ctxAttendance);
+        
+        if (chartInstance && customLegendContainer) {
+            chartInstance.data.datasets.forEach((dataset, index) => {
+                const legendItem = document.createElement('label');
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.style.gap = '0.5rem';
+                legendItem.style.cursor = 'pointer';
+                legendItem.style.fontSize = '0.9rem';
+                legendItem.style.fontWeight = '500';
+                legendItem.style.color = '#374151';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.style.cursor = 'pointer';
+                checkbox.style.accentColor = dataset.backgroundColor;
+                checkbox.style.width = '16px';
+                checkbox.style.height = '16px';
+                
+                checkbox.addEventListener('change', (e) => {
+                    const isVisible = chartInstance.isDatasetVisible(index);
+                    if (isVisible) {
+                        chartInstance.hide(index);
+                    } else {
+                        chartInstance.show(index);
+                    }
+                });
+                
+                const textNode = document.createTextNode(dataset.label);
+                
+                legendItem.appendChild(checkbox);
+                legendItem.appendChild(textNode);
+                
+                customLegendContainer.appendChild(legendItem);
+            });
+        }
+        /* {% else %} */
+        // Data Grafik Absensi Karyawan
+        const empLabels = JSON.parse('{{ emp_chart_labels|escapejs|default:"[]" }}');
+        const empData = JSON.parse('{{ emp_chart_data|escapejs|default:"[]" }}');
+        
+        if (empLabels.length > 0) {
+            const ctxEmp = document.getElementById('empChart').getContext('2d');
+            new Chart(ctxEmp, {
+                type: 'pie',
+                data: {
+                    labels: empLabels,
+                    datasets: [{
+                        data: empData,
+                        backgroundColor: [
+                            '#10b981', // Tepat Waktu (Hijau)
+                            '#f59e0b', // Terlambat (Kuning/Oranye)
+                            '#ef4444'  // Tidak Masuk (Merah)
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+        /* {% endif %} */
+    });
+</script>
+{% if user.role == 'HR_ADMIN' %}
+<style>
+@media (min-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr 2fr;
+    }
+}
+</style>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions" style="margin-bottom: 2rem;">
+    <div>
+        <h1 style="background: linear-gradient(135deg, var(--text-main), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Persetujuan Profil</h1>
+        <p>Daftar permintaan perubahan profil dari karyawan yang menunggu persetujuan Anda.</p>
+    </div>
+</div>
+
+<div class="table-container glass-panel" style="padding: 1.5rem; overflow-x: auto; background: rgba(255, 255, 255, 0.6);">
+    <table class="table" style="background: transparent;">
+        <thead>
+            <tr>
+                <th style="background: transparent;">Nama Lama</th>
+                <th style="background: transparent;">Perubahan yang Diajukan</th>
+                <th style="background: transparent;">Waktu Pengajuan</th>
+                <th style="background: transparent;">Status</th>
+                <th style="background: transparent;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr style="transition: all 0.2s; background: rgba(255, 255, 255, 0.4); border-radius: 8px;">
+                <td style="font-weight: 500; border-bottom: none;">
+                    {{ req.employee.nama }}<br>
+                    <small style="color: var(--text-muted);">{{ req.employee.email }}</small>
+                </td>
+                <td style="border-bottom: none;">
+                    {% if req.employee.nama != req.nama_baru %}
+                    <div style="margin-bottom: 4px;"><strong>Nama:</strong> <s style="color: var(--text-muted);">{{ req.employee.nama }}</s> <span style="color: var(--primary); font-weight: bold; margin: 0 4px;">➔</span> <span style="color: #10b981; font-weight: 500;">{{ req.nama_baru }}</span></div>
+                    {% endif %}
+                    {% if req.employee.email != req.email_baru %}
+                    <div><strong>Email:</strong> <s style="color: var(--text-muted);">{{ req.employee.email }}</s> <span style="color: var(--primary); font-weight: bold; margin: 0 4px;">➔</span> <span style="color: #10b981; font-weight: 500;">{{ req.email_baru }}</span></div>
+                    {% endif %}
+                </td>
+                <td style="border-bottom: none;">{{ req.created_at|date:"d M Y H:i" }}</td>
+                <td style="border-bottom: none;">
+                    <span class="badge" style="background-color: rgba(245, 158, 11, 0.1); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.2);">Menunggu</span>
+                </td>
+                <td style="border-bottom: none;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <form method="POST" action="{% url 'approve_profile' req.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 6px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">Setujui</button>
+                        </form>
+                        <form method="POST" action="{% url 'reject_profile' req.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 6px;">Tolak</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr style="height: 8px; background: transparent; border: none;"><td colspan="5" style="padding: 0; border: none;"></td></tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted); background: transparent; border-bottom: none;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.2;">✓</div>
+                    Tidak ada antrean persetujuan profil saat ini.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+    <span style="font-size: 0.9rem; color: var(--text-muted);">
+        Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+    </span>
+    <div style="display: flex; gap: 0.5rem;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn" style="border: 1px solid var(--border);">Sebelumnya</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn" style="border: 1px solid var(--border);">Selanjutnya</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

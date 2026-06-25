@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto; text-align: center;">
+    <div style="color: #ef4444; margin-bottom: 1rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+    </div>
+    <h2 style="margin-bottom: 1rem;">Konfirmasi Hapus</h2>
+    <p style="margin-bottom: 2rem;">Apakah Anda yakin ingin menghapus data karyawan <strong>{{ object.nama }}</strong>? Tindakan ini tidak dapat dibatalkan dan akan menghapus akun beserta seluruh data absensinya.</p>
+    
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <button type="submit" class="btn" style="background-color: #ef4444; color: white;">Ya, Hapus Data</button>
+            <a href="{% url 'employee_list' %}" class="btn" style="border: 1px solid var(--border);">Batal</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

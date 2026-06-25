@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card glass-panel" style="max-width: 600px; margin: 2rem auto; padding: 2.5rem; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(79, 70, 229, 0.1); filter: blur(40px); border-radius: 50%;"></div>
+    
+    <h2 style="margin-bottom: 2rem; font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, var(--text-main), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        {% if object %}
+            {% if user.role == 'HR_ADMIN' %}Edit Data Karyawan{% else %}Pengaturan Profil Saya{% endif %}
+        {% else %}
+            Pendaftaran Karyawan Baru
+        {% endif %}
+    </h2>
+    
+    <form method="POST" action="">
+        {% csrf_token %}
+        
+        <div style="display: grid; gap: 1.5rem;">
+            {% for field in form %}
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="{{ field.id_for_label }}" class="form-label" style="color: var(--text-main); font-weight: 600;">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <small style="color: var(--text-muted); display: block; margin-top: 0.4rem; font-size: 0.85rem;">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                <div style="color: #ef4444; font-size: 0.85rem; margin-top: 0.4rem; font-weight: 500;">
+                    {{ field.errors.0 }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div style="margin-top: 2.5rem; display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                Simpan Data
+            </button>
+            <a href="{% url 'employee_list' %}" class="btn" style="padding: 0.8rem 2rem; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; background: transparent;">
+                Kembali
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Premium Form Styling */
+    form input[type="text"], 
+    form input[type="email"], 
+    form input[type="password"],
+    form input[type="date"],
+    form select {
+        width: 100%;
+        padding: 0.8rem 1.2rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1rem;
+        background-color: rgba(255, 255, 255, 0.8);
+        transition: all 0.3s ease;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+    
+    form input[type="checkbox"] {
+        width: 1.4rem;
+        height: 1.4rem;
+        accent-color: var(--primary);
+        cursor: pointer;
+    }
+
+    form input[type="text"]:focus, 
+    form input[type="email"]:focus, 
+    form input[type="password"]:focus,
+    form input[type="date"]:focus,
+    form select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        background-color: #fff;
+    }
+</style>
+{% endblock %}

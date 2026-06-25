@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HRIS System{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.1">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+    {% if user.is_authenticated and not hide_sidebar %}
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                HRIS Pro
+            </div>
+            <nav>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Beranda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'employee_list' %}" class="{% if 'employee' in request.resolver_match.url_name %}active{% endif %}">Karyawan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'attendance_personal' %}" class="{% if request.path == '/attendance/' %}active{% endif %}">Absensi Personal</a>
+                    </li>
+                    {% if user.role == 'HR_ADMIN' %}
+                    <li class="nav-item">
+                        <a href="{% url 'attendance_management' %}" class="{% if '/attendance/management/' in request.path %}active{% endif %}">Manajemen Absensi</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div id="sidebar-overlay"></div>
+            
+            <header class="header-actions">
+                <div class="mobile-header">
+                    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle Sidebar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <!-- Breadcrumbs or Page Title can go here -->
+                </div>
+                <div class="user-profile-menu">
+                    <span class="badge badge-active">{{ user.role }}</span>
+                    <span>{{ user.email }}</span>
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background: transparent; border: 1px solid var(--border); margin-left: 10px;">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            {% if messages %}
+            <div style="margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                {% if message.tags == 'success' %}
+                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #d1fae5; color: #065f46; border: 1px solid #34d399;">
+                {% elif message.tags == 'error' %}
+                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;">
+                {% else %}
+                <div class="alert" style="padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db;">
+                {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+    {% else %}
+        {% block auth_content %}
+        {% endblock %}
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (menuBtn && sidebar && overlay) {
+                function toggleSidebar() {
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('show');
+                }
+                
+                menuBtn.addEventListener('click', toggleSidebar);
+                overlay.addEventListener('click', toggleSidebar);
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

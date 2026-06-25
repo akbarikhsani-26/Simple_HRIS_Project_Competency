@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions" style="margin-bottom: 2rem;">
+    <h1>Manajemen Absensi</h1>
+</div>
+
+<!-- Filter & Search Panel -->
+<div class="card" style="margin-bottom: 2rem;">
+    <form method="GET" action="" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label for="search" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Pencarian Karyawan</label>
+            <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Cari nama karyawan..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+        </div>
+        
+        <div style="flex: 1; min-width: 150px;">
+            <label for="date" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Pilih Tanggal</label>
+            <input type="date" id="date" name="date" value="{{ selected_date }}" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+        </div>
+        
+        <div style="flex: 1; min-width: 150px;">
+            <label for="status" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Status</label>
+            <select id="status" name="status" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                <option value="">Semua Status</option>
+                <option value="TEPAT_WAKTU" {% if status_query == 'TEPAT_WAKTU' %}selected{% endif %}>Tepat Waktu</option>
+                <option value="TERLAMBAT" {% if status_query == 'TERLAMBAT' %}selected{% endif %}>Terlambat</option>
+                <option value="ALPA" {% if status_query == 'ALPA' %}selected{% endif %}>Tidak Masuk</option>
+            </select>
+        </div>
+        
+        <div>
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">Cari / Filter</button>
+            <a href="?" class="btn" style="padding: 0.75rem 1.5rem; border: 1px solid var(--border); background-color: white;">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabel Riwayat (Admin) -->
+<div class="card" style="overflow-x: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <h2 style="margin: 0;">Laporan: {{ selected_date }}</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/api/attendance/export-excel/?search={{ search_query }}&date={{ selected_date }}&status={{ status_query }}" class="btn" style="border: 1px solid var(--border); background-color: #10b981; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">⬇ Export Excel</a>
+            <a href="/api/attendance/export-csv/?search={{ search_query }}&date={{ selected_date }}&status={{ status_query }}" class="btn" style="border: 1px solid var(--border); background-color: #4f46e5; color: white; padding: 0.5rem 1rem; font-size: 0.85rem;">⬇ Export CSV</a>
+        </div>
+    </div>
+    <div class="table-container" style="min-width: 600px;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nama Karyawan</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Keluar</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendance_history %}
+                <tr>
+                    <td><strong>{{ att.karyawan.nama }}</strong></td>
+                    <td>{{ att.jam_masuk|time:"H:i:s"|default:"-" }}</td>
+                    <td>{{ att.jam_keluar|time:"H:i:s"|default:"-" }}</td>
+                    <td>
+                        {% if att.status_display == 'Tepat Waktu' %}
+                        <span class="badge" style="background-color: #d1fae5; color: #065f46;">Tepat Waktu</span>
+                        {% elif att.status_display == 'Terlambat' %}
+                        <span class="badge" style="background-color: #fee2e2; color: #991b1b;">Terlambat</span>
+                        {% else %}
+                        <span class="badge" style="background-color: #f3f4f6; color: #374151;">Tidak Masuk</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'attendance_edit' att.karyawan.id selected_date %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border); color: #4f46e5;">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Tidak ada data yang sesuai filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+        {% if page_obj.has_previous %}
+        <a href="?search={{ search_query }}&date={{ selected_date }}&status={{ status_query }}&page={{ page_obj.previous_page_number }}" class="btn" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border);">Sebelumnya</a>
+        {% endif %}
+
+        <span style="padding: 0.4rem 0.8rem; border: 1px solid var(--border); background-color: var(--background); border-radius: 4px;">
+            Hal {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?search={{ search_query }}&date={{ selected_date }}&status={{ status_query }}&page={{ page_obj.next_page_number }}" class="btn" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border);">Berikutnya</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

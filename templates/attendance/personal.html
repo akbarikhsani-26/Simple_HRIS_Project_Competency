@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Halaman Absensi</h1>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <!-- Panel Jadwal & Status -->
+    <div class="card">
+        <h2>Status Hari Ini: {{ today|date:"l, d M Y" }}</h2>
+        
+        <div style="margin: 1.5rem 0; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+            <p style="font-weight: 600; margin-bottom: 0.5rem;">Jadwal Kerja Anda</p>
+            <p><strong>Senin - Jumat</strong></p>
+            <p>Check-In: Sebelum 08:00</p>
+            <p>Check-Out: Setelah 17:00</p>
+        </div>
+
+        {% if is_holiday %}
+            <div style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px;">
+                <strong>Libur Nasional:</strong> {{ holiday_name }}<br>
+                Anda tidak dapat melakukan absensi pada hari libur. Hubungi HR jika terdapat kasus terkhusus.
+            </div>
+        {% elif is_weekend %}
+            <div style="background-color: #fef3c7; color: #92400e; padding: 1rem; border-radius: 8px;">
+                <strong>Akhir Pekan:</strong> Hari ini adalah hari libur akhir pekan.<br>
+                Hubungi HR jika Anda diharuskan absen di luar hari kerja.
+            </div>
+        {% else %}
+            {% if has_checked_in %}
+                <div style="background-color: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    ✅ Anda sudah <strong>Check-In</strong> pada pukul <strong>{{ jam_masuk|time:"H:i:s" }}</strong>
+                </div>
+                
+                {% if has_checked_out %}
+                    <div style="background-color: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px;">
+                        ✅ Anda sudah <strong>Check-Out</strong> pada pukul <strong>{{ jam_keluar|time:"H:i:s" }}</strong>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="background-color: #e0e7ff; color: #3730a3; padding: 1rem; border-radius: 8px;">
+                    Silakan lakukan Check-In sebelum pukul 08:00.
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Panel Aksi -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <h2 style="margin-bottom: 1.5rem;">Aksi Absensi</h2>
+        
+        <!-- HUD Jam Digital -->
+        <div style="background: #1f2937; color: #10b981; font-family: 'Courier New', Courier, monospace; font-size: 2.5rem; font-weight: bold; padding: 1rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); letter-spacing: 2px;">
+            <span id="live-clock">00:00:00</span>
+        </div>
+        
+        <div id="error-message" style="display: none; background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; width: 100%;"></div>
+
+        <div style="display: flex; gap: 1rem; width: 100%; max-width: 400px; flex-wrap: wrap;">
+            <button id="btn-checkin" onclick="doAbsen('check-in')" class="btn btn-primary" style="flex: 1; padding: 1rem;" 
+                {% if is_holiday or is_weekend or has_checked_in %}disabled style="opacity: 0.5;"{% endif %}>
+                CHECK IN
+            </button>
+            <button id="btn-checkout" onclick="doAbsen('check-out')" class="btn" style="flex: 1; padding: 1rem; background-color: var(--secondary); color: white;" 
+                {% if is_holiday or is_weekend or not has_checked_in or has_checked_out %}disabled style="opacity: 0.5;"{% endif %}>
+                CHECK OUT
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabel Riwayat Pribadi -->
+<div class="card" style="overflow-x: auto;">
+    <h2>Riwayat Absensi Pribadi</h2>
+    <div class="table-container" style="margin-top: 1rem; min-width: 600px;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Keluar</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in page_obj %}
+                <tr>
+                    <td>{{ att.tanggal|date:"d M Y" }}</td>
+                    <td>{{ att.jam_masuk|time:"H:i:s"|default:"-" }}</td>
+                    <td>{{ att.jam_keluar|time:"H:i:s"|default:"-" }}</td>
+                    <td>
+                        {% if att.status == 'TEPAT_WAKTU' %}
+                        <span class="badge" style="background-color: #d1fae5; color: #065f46;">Tepat Waktu</span>
+                        {% elif att.status == 'TERLAMBAT' %}
+                        <span class="badge" style="background-color: #fee2e2; color: #991b1b;">Terlambat</span>
+                        {% else %}
+                        <span class="badge">{{ att.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted);">Belum ada data absensi.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border);">Sebelumnya</a>
+        {% endif %}
+
+        <span style="padding: 0.4rem 0.8rem; border: 1px solid var(--border); background-color: var(--background); border-radius: 4px;">
+            Hal {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border);">Berikutnya</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('id-ID', { hour12: false });
+        const clockEl = document.getElementById('live-clock');
+        if(clockEl) clockEl.innerText = timeString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function doAbsen(action) {
+        const btn = document.getElementById(action === 'check-in' ? 'btn-checkin' : 'btn-checkout');
+        const errorDiv = document.getElementById('error-message');
+        btn.disabled = true;
+        btn.innerText = 'Memproses...';
+        errorDiv.style.display = 'none';
+
+        fetch(`/api/attendance/${action}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(res => {
+            if (res.status === 200 || res.status === 201) {
+                // Success, reload page
+                window.location.reload();
+            } else {
+                // Error
+                errorDiv.innerText = res.body.error || 'Terjadi kesalahan.';
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = action === 'check-in' ? 'CHECK IN' : 'CHECK OUT';
+            }
+        })
+        .catch(err => {
+            errorDiv.innerText = 'Koneksi gagal.';
+            errorDiv.style.display = 'block';
+            btn.disabled = false;
+            btn.innerText = action === 'check-in' ? 'CHECK IN' : 'CHECK OUT';
+        });
+    }
+</script>
+{% endblock %}

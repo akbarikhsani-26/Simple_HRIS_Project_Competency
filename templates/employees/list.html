@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions" style="margin-bottom: 1rem;">
+    <h1>{% if user.role == 'HR_ADMIN' %}Daftar Karyawan{% else %}Profil Saya{% endif %}</h1>
+    {% if user.role == 'HR_ADMIN' %}
+    <a href="{% url 'employee_create' %}" class="btn btn-primary">+ Tambah Karyawan</a>
+    {% endif %}
+</div>
+
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Jabatan</th>
+                <th>Tanggal Masuk</th>
+                <th>Status</th>
+                {% if user.role == 'HR_ADMIN' %}
+                <th>Aksi</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in employees %}
+            <tr>
+                <td style="font-weight: 500;">{{ emp.nama }}</td>
+                <td style="color: var(--text-muted);">{{ emp.email }}</td>
+                <td>{{ emp.jabatan }}</td>
+                <td>{{ emp.tanggal_masuk|date:"d M Y" }}</td>
+                <td>
+                    {% if emp.status_aktif %}
+                    <span class="badge badge-active">Aktif</span>
+                    {% else %}
+                    <span class="badge badge-inactive">Non-Aktif</span>
+                    {% endif %}
+                </td>
+                {% if user.role == 'HR_ADMIN' %}
+                <td>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{% url 'employee_edit' emp.pk %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border); color: #4f46e5;">Edit</a>
+                        <a href="{% url 'employee_delete' emp.pk %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border); color: #ef4444;">Hapus</a>
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">Belum ada data karyawan.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+    <span style="font-size: 0.9rem; color: var(--text-muted);">
+        Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+    </span>
+    <div style="display: flex; gap: 0.5rem;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn" style="border: 1px solid var(--border);">Sebelumnya</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn" style="border: 1px solid var(--border);">Selanjutnya</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
