@@ -6,7 +6,7 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
 
-# Create initial superuser
+# Create or update initial superuser
 python manage.py shell -c "
 import os
 import django
@@ -16,7 +16,13 @@ User = get_user_model()
 email = 'admin@hr.com'
 password = 'admin123'
 
-if not User.objects.filter(email=email).exists():
-    User.objects.create_superuser(email=email, password=password)
-    print(f'Superuser {email} created successfully.')
+user, created = User.objects.get_or_create(email=email)
+if created:
+    user.set_password(password)
+
+user.is_staff = True
+user.is_superuser = True
+user.role = 'HR_ADMIN'
+user.save()
+print(f'Superuser {email} role ensured as HR_ADMIN.')
 "
