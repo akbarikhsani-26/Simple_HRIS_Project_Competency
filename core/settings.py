@@ -116,3 +116,8 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
 }
 LOGIN_URL = "login"
+
+# Session Timeout Settings
+SESSION_COOKIE_AGE = 600  # 10 minutes
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh timeout on every request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Automatically logout if the browser is closed
