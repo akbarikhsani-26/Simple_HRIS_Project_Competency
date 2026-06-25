@@ -157,6 +157,7 @@
         .then(res => {
             if (res.status === 200 || res.status === 201) {
                 // Success, reload page
+                alert("Absensi berhasil dicatat!");
                 window.location.reload();
             } else {
                 // Error

@@ -57,10 +57,18 @@ class AttendanceViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         # 2. Time Cutoff Validation (08:00)
         current_time = timezone.localtime().time()
-        cutoff_time = datetime.time(8, 0, 0)
+        start_time = datetime.time(8, 0, 0)
+
+        if current_time < start_time:
+            return Response(
+                {
+                    "error": "Anda hanya dapat melakukan absen masuk mulai pukul 08:00 pagi."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         status_kehadiran = (
-            "TERLAMBAT" if current_time > cutoff_time else "TEPAT_WAKTU"
+            "TEPAT_WAKTU" if current_time <= datetime.time(8, 15, 0) else "TERLAMBAT"
         )
 
         try:
