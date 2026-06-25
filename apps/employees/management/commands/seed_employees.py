@@ -31,6 +31,31 @@ class Command(BaseCommand):
                 )
             )
 
+        # 1.5 Create specific documented dummy users (from README)
+        fixed_users = [
+            ("fnarpati@example.com", "Fajar Narpati"),
+            ("galur93@example.net", "Galur Hidayat"),
+            ("rpangestu@example.net", "Restu Pangestu"),
+        ]
+        
+        for f_email, f_name in fixed_users:
+            if not User.objects.filter(email=f_email).exists():
+                try:
+                    user = User.objects.create_user(
+                        email=f_email, password="password123", role="EMPLOYEE"
+                    )
+                    Employee.objects.create(
+                        user=user,
+                        nama=f_name,
+                        email=f_email,
+                        jabatan="Staff IT",
+                        tanggal_masuk=fake.date_between(start_date="-5y", end_date="today"),
+                        status_aktif=True,
+                    )
+                    self.stdout.write(self.style.SUCCESS(f"Created fixed employee: {f_email}"))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Failed fixed user {f_email}: {e}"))
+
         # 2. Generate 30 dummy employees
         num_employees = 30
         jabatan_choices = [
@@ -42,7 +67,6 @@ class Command(BaseCommand):
             "Operations",
             "Designer",
         ]
-
         created_count = 0
         for _ in range(num_employees):
             nama = fake.name()
